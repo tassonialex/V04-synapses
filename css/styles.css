@@ -179,7 +179,20 @@ a {
    ============================================================ */
 @media (max-width: 899px) {
   .site-header {
-    /* Il blur dietro un header sticky è costoso da ricalcolare ad ogni
+    /* Su mobile si usa position: fixed invece di sticky. Alcuni browser,
+       quando il menu si apre e <body>/<html> passano a overflow:hidden
+       per bloccare lo scroll, "perdono" lo stato agganciato di un
+       elemento sticky che era già scorso oltre la sua posizione
+       naturale, facendolo sparire dal viewport (e con lui l'icona X per
+       chiudere). position: fixed è sempre ancorato in cima, senza
+       eccezioni, indipendentemente da scroll-lock o stato del menu.
+       Lo spazio che l'header non riserva più viene compensato sotto
+       con lo stesso margine su main, cosi visivamente non cambia nulla. */
+    position: fixed;
+    left: 0;
+    right: 0;
+
+    /* Il blur dietro un header fisso è costoso da ricalcolare ad ogni
        frame di scroll sulle GPU mobili: su Chrome/Android questo può far
        "scattare" o sparire momentaneamente l'header durante lo scroll
        veloce. Su mobile si usa quindi un fondo quasi pieno, senza blur,
@@ -188,6 +201,10 @@ a {
     backdrop-filter: none;
     background: rgba(10, 13, 27, 0.97);
     transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  main {
+    margin-top: var(--header-h);
   }
 
   .site-header[data-theme="light"] {
@@ -203,41 +220,24 @@ a {
     display: block;
   }
 
+  /* Il colore delle barre/aste dell'hamburger è pilotato da una custom
+     property letta dalla regola originale .nav-toggle span (sopra),
+     mai da un "background" diretto qui: cosi non può mai competere in
+     specificità con .nav-toggle[aria-expanded="true"] span { background:
+     transparent }, che resta sempre l'unica regola a decidere quando la
+     barra centrale sparisce per formare la X. */
   .site-header[data-theme="light"] .nav-toggle {
     border-color: var(--line-light);
+    --nav-toggle-ink: var(--ink);
   }
 
-  .site-header[data-theme="light"] .nav-toggle span,
-  .site-header[data-theme="light"] .nav-toggle span::before,
-  .site-header[data-theme="light"] .nav-toggle span::after {
-    background: var(--ink);
-  }
-
-  /* Il pannello del menu resta sempre su blu notte (.site-nav, invariato):
-     quando è aperto, l'header stesso torna al tema scuro indipendentemente
-     dalla sezione sottostante, cosi la X e la barra restano leggibili. */
-  body.nav-open .site-header[data-theme="light"] {
-    background: rgba(10, 13, 27, 0.92);
-    border-bottom-color: var(--line-dark);
-  }
-
-  body.nav-open .site-header[data-theme="light"] .logo img.logo-img--main {
-    display: block;
-  }
-
-  body.nav-open .site-header[data-theme="light"] .logo img.logo-img--alt {
-    display: none;
-  }
-
-  body.nav-open .site-header[data-theme="light"] .nav-toggle {
-    border-color: var(--line-dark);
-  }
-
-  body.nav-open .site-header[data-theme="light"] .nav-toggle span,
-  body.nav-open .site-header[data-theme="light"] .nav-toggle span::before,
-  body.nav-open .site-header[data-theme="light"] .nav-toggle span::after {
-    background: var(--text-on-dark);
-  }
+  /* Quando il menu è aperto, js/main.js imposta direttamente
+     data-theme="dark" sull'header (nessuna regola [data-theme="light"]
+     qui sopra può quindi essere attiva in quel momento): l'header e
+     l'icona tornano scuri in automatico, senza bisogno di ulteriori
+     regole "body.nav-open" che dovrebbero rincorrere/vincere quelle
+     sopra in specificità. Un solo stato attivo alla volta = zero
+     conflitti possibili. */
 }
 
 .nav-toggle {
@@ -257,7 +257,7 @@ a {
   display: block;
   height: 2px;
   width: 20px;
-  background: var(--text-on-dark);
+  background: var(--nav-toggle-ink, var(--text-on-dark));
   border-radius: 2px;
   position: relative;
   transition: transform 0.2s ease, opacity 0.2s ease;
